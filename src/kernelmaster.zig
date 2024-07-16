@@ -12,3 +12,7 @@ pub const thread_success = return_value.success;
 pub const thread_error = return_value.thread_error;
 
 pub const launch = operation.launch;
+
+test {
+    _ = @import("./capsules/tests/tests.zig");
+}
