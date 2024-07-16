@@ -4,7 +4,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     //
-    const kernelmaster_zig = b.createModule(.{
+    const kernelmaster_zig = b.addModule("kernelmaster", .{
         .root_source_file = b.path("./src/kernelmaster.zig"),
     });
     //
