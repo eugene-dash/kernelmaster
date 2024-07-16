@@ -1,20 +1,22 @@
 const return_value = @import("../return_value/return_value.zig").return_value;
 
+const kernel_datatype: type = usize;
+
 pub const thread_info = struct {
     thread_return: *return_value,
     thread_id: usize,
     nthreads: usize,
-    kernel_begin: u128,
-    kernel_end: u128,
+    kernel_begin: kernel_datatype,
+    kernel_end: kernel_datatype,
 
     pub const generator = struct {
         remainder: usize,
-        remainder_end: u128,
-        perthread: u128,
+        remainder_end: usize,
+        perthread: usize,
         nthreads: usize,
-        nkernels: u128,
+        nkernels: usize,
         thread_returns: []return_value,
-        pub fn init(nthreads: usize, nkernels: u128, thread_returns: []return_value) thread_info.generator {
+        pub fn init(nthreads: usize, nkernels: usize, thread_returns: []return_value) thread_info.generator {
             var r: thread_info.generator = .{
                 .remainder = @intCast(nkernels % nthreads),
                 .remainder_end = undefined,
@@ -28,7 +30,7 @@ pub const thread_info = struct {
         }
         pub fn gen(self: thread_info.generator, i: usize) thread_info {
             if (i < self.remainder) {
-                const kernel_begin: u128 = (1 + self.perthread) * i;
+                const kernel_begin: usize = (1 + self.perthread) * i;
                 return .{
                     .thread_return = @ptrCast(self.thread_returns.ptr+i),
                     .thread_id = i,
@@ -37,7 +39,7 @@ pub const thread_info = struct {
                     .kernel_end = kernel_begin + @as(usize, 1) + self.perthread,
                 };
             } else {
-                const kernel_begin: u128 = self.remainder_end + (self.perthread * (i - self.remainder));
+                const kernel_begin: usize = self.remainder_end + (self.perthread * (i - self.remainder));
                 return .{
                     .thread_return = @ptrCast(self.thread_returns.ptr+i),
                     .thread_id = i,

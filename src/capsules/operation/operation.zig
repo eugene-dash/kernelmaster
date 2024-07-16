@@ -8,7 +8,7 @@ pub const operation = struct {
     result: *return_value,
     allocator: std.mem.Allocator,
 
-    fn primary_thread(allocator: std.mem.Allocator, result: *return_value,nthreads: usize, nkernels: u128, comptime kernel: anytype, args: anytype) void {
+    fn primary_thread(allocator: std.mem.Allocator, result: *return_value,nthreads: usize, nkernels: usize, comptime kernel: anytype, args: anytype) void {
         result.* = return_value.success;
         if (nthreads == 0) {
             result.* = return_value.internal_error;
@@ -55,7 +55,7 @@ pub const operation = struct {
         }
         return;
     }
-    pub fn launch(allocator: std.mem.Allocator, nthreads: usize, nkernels: u128, comptime kernel: anytype, args: anytype) error_sets.kernelmaster_error!operation {
+    pub fn launch(allocator: std.mem.Allocator, nthreads: usize, nkernels: usize, comptime kernel: anytype, args: anytype) error_sets.kernelmaster_error!operation {
         const result: *return_value = allocator.create(return_value) catch return error.kernelmaster_internal_error;
         errdefer allocator.destroy(result);
         return .{

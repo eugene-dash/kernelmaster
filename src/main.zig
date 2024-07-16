@@ -6,8 +6,7 @@ fn example_kernel(thread_info: kernelmaster.thread_info, comptime debug: bool) v
     if (!debug)
         return;
     std.debug.print("_ {}_id :: {} --> {}\n", .{ thread_info.thread_id, thread_info.kernel_begin, thread_info.kernel_end });
-    var k: u128 = thread_info.kernel_begin;
-    while (k < thread_info.kernel_end) : (k += 1) {
+    for (thread_info.kernel_begin..thread_info.kernel_end) |k| {
         std.debug.print("|-{}\n", .{k});
     }
     std.debug.print("^\n", .{});

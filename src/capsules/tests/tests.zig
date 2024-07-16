@@ -3,7 +3,7 @@ const testing = std.testing;
 const kernelmaster = @import("../../kernelmaster.zig");
 
 fn internal_test_kernel(ti: kernelmaster.thread_info, a: []usize) void {
-    for (@intCast(ti.kernel_begin)..@intCast(ti.kernel_end)) |k| {
+    for (ti.kernel_begin..ti.kernel_end) |k| {
         a[k] = k;
     }
 }
