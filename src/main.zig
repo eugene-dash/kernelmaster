@@ -14,7 +14,7 @@ fn example_kernel(thread_info: kernelmaster.thread_info, comptime debug: bool) v
 }
 
 fn kernelmaster_example(comptime debug: bool) !void {
-    const op = try kernelmaster.operation.launch(std.heap.c_allocator, 7, 12, example_kernel, .{debug});
+    const op = try kernelmaster.operation.launch(std.heap.c_allocator, .{.nthreads = 7,}, 12, example_kernel, .{debug});
     try op.sync();
     return;
 }

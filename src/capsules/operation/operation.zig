@@ -2,18 +2,27 @@ const std = @import("std");
 const return_value = @import("../return_value/return_value.zig").return_value;
 const thread_info = @import("../thread_info/thread_info.zig").thread_info;
 const error_sets = @import("../error_sets/error_sets.zig");
+const runtime_consts = @import("../runtime_consts/runtime_consts.zig");
+
 
 pub const operation = struct {
     thread: std.Thread,
     result: *return_value,
     allocator: std.mem.Allocator,
 
-    fn primary_thread(allocator: std.mem.Allocator, result: *return_value,nthreads: usize, nkernels: usize, comptime kernel: anytype, args: anytype) void {
+    const options = struct {
+        nthreads: usize = 0,
+    };
+
+    fn primary_thread(allocator: std.mem.Allocator, result: *return_value, ops: operation.options, nkernels: usize, comptime kernel: anytype, args: anytype) void {
         result.* = return_value.success;
-        if (nthreads == 0) {
-            result.* = return_value.internal_error;
-            return;
-        }
+        const nthreads = blk:{
+            if (ops.nthreads == 0) {
+                break:blk runtime_consts.get_ncpus();
+            } else {
+                break:blk ops.nthreads;
+            }
+        };
         const threads =
             allocator.alloc(std.Thread, nthreads)
                 catch {
@@ -55,7 +64,7 @@ pub const operation = struct {
         }
         return;
     }
-    pub fn launch(allocator: std.mem.Allocator, nthreads: usize, nkernels: usize, comptime kernel: anytype, args: anytype) error_sets.kernelmaster_error!operation {
+    pub fn launch(allocator: std.mem.Allocator, ops: operation.options, nkernels: usize, comptime kernel: anytype, args: anytype) error_sets.kernelmaster_error!operation {
         const result: *return_value = allocator.create(return_value) catch return error.kernelmaster_internal_error;
         errdefer allocator.destroy(result);
         return .{
@@ -65,7 +74,7 @@ pub const operation = struct {
                 .{
                     allocator,
                     result,
-                    nthreads,
+                    ops,
                     nkernels,
                     kernel,
                     args,
@@ -82,6 +91,7 @@ pub const operation = struct {
         switch (r) {
             return_value.success => return,
             return_value.thread_error => return error.kernelmaster_thread_error,
+            return_value.invalid_options => return error.kernelmaster_invalid_options,
             else => return error.kernelmaster_internal_error,
         }
     }

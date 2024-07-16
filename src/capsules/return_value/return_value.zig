@@ -1,5 +1,6 @@
 pub const return_value = enum(u8) {
     success = 0,
-    internal_error = 15,
-    thread_error = 255,
+    thread_error = 3,
+    invalid_options = 15,
+    internal_error = 255,
 };

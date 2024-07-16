@@ -15,7 +15,7 @@ test "basic kernel functionality" {
     for (array) |*item| {
         item.* = 0;
     }
-    const op = try kernelmaster.operation.launch(allocator, 10, nkernels, internal_test_kernel, .{array});
+    const op = try kernelmaster.operation.launch(allocator, .{}, nkernels, internal_test_kernel, .{array});
     try op.sync();
     for (0.., array) |index, item| {
         try testing.expect(index == item);
