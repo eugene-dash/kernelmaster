@@ -14,7 +14,14 @@ fn example_kernel(thread_info: kernelmaster.thread_info, comptime debug: bool) v
 }
 
 fn kernelmaster_example(comptime debug: bool) !void {
-    const op = try kernelmaster.operation.launch(std.heap.c_allocator, .{.nthreads = 7,}, 12, example_kernel, .{debug});
+    var op = try kernelmaster.operation.launch(std.heap.c_allocator, .{
+        .nthreads = 7,
+    }, 12, example_kernel, .{debug});
+    try op.sync();
+    std.debug.print(">>break<<\n", .{});
+    op = try kernelmaster.operation.launch(std.heap.c_allocator, .{
+        .nthreads = 124,
+    }, 2, example_kernel, .{debug});
     try op.sync();
     return;
 }

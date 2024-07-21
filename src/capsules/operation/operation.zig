@@ -11,17 +11,26 @@ pub const operation = struct {
 
     const options = struct {
         nthreads: usize = 0,
+        launch_noops: bool = false,
     };
 
     fn primary_thread(allocator: std.mem.Allocator, result: *return_value, ops: operation.options, nkernels: usize, comptime kernel: anytype, args: anytype) void {
         result.* = return_value.success;
-        const nthreads = blk: {
+        var nthreads = blk: {
             if (ops.nthreads == 0) {
                 break :blk runtime_consts.get_ncpus();
             } else {
                 break :blk ops.nthreads;
             }
         };
+        if (!ops.launch_noops) {
+            if (nthreads > nkernels) {
+                nthreads = nkernels;
+                if (nthreads == 0) {
+                    return;
+                }
+            }
+        }
         const threads =
             allocator.alloc(std.Thread, nthreads) catch {
             result.* = return_value.internal_error;
