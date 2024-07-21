@@ -4,7 +4,6 @@ const thread_info = @import("../thread_info/thread_info.zig").thread_info;
 const error_sets = @import("../error_sets/error_sets.zig");
 const runtime_consts = @import("../runtime_consts/runtime_consts.zig");
 
-
 pub const operation = struct {
     thread: std.Thread,
     result: *return_value,
@@ -16,47 +15,44 @@ pub const operation = struct {
 
     fn primary_thread(allocator: std.mem.Allocator, result: *return_value, ops: operation.options, nkernels: usize, comptime kernel: anytype, args: anytype) void {
         result.* = return_value.success;
-        const nthreads = blk:{
+        const nthreads = blk: {
             if (ops.nthreads == 0) {
-                break:blk runtime_consts.get_ncpus();
+                break :blk runtime_consts.get_ncpus();
             } else {
-                break:blk ops.nthreads;
+                break :blk ops.nthreads;
             }
         };
         const threads =
-            allocator.alloc(std.Thread, nthreads)
-                catch {
-                    result.* = return_value.internal_error;
-                    return;
-                };
+            allocator.alloc(std.Thread, nthreads) catch {
+            result.* = return_value.internal_error;
+            return;
+        };
         defer allocator.free(threads);
         const thread_returns =
-            allocator.alloc(return_value, nthreads)
-                catch {
-                    result.* = return_value.internal_error;
-                    return;
-                };
+            allocator.alloc(return_value, nthreads) catch {
+            result.* = return_value.internal_error;
+            return;
+        };
         defer allocator.free(thread_returns);
 
         const thread_info_gen = thread_info.generator.init(nthreads, nkernels, thread_returns);
         for (0.., thread_returns, threads) |nthreads_launched, *this_thread_return, *this_thread| {
             this_thread_return.* = return_value.success;
             this_thread.* =
-                std.Thread.spawn(.{}, kernel, .{thread_info_gen.gen(nthreads_launched)} ++ args)
-                    catch {
-                        for (threads[0..nthreads_launched]) |thread| {
-                            thread.join();
-                        }
-                        result.* = return_value.internal_error;
-                        return;
-                    };
+                std.Thread.spawn(.{}, kernel, .{thread_info_gen.gen(nthreads_launched)} ++ args) catch {
+                for (threads[0..nthreads_launched]) |thread| {
+                    thread.join();
+                }
+                result.* = return_value.internal_error;
+                return;
+            };
         }
 
         for (0.., thread_returns, threads) |i, thread_returned, thread| {
             thread.join();
             if (thread_returned != return_value.success) {
                 result.* = return_value.thread_error;
-                for (threads[i..]) |thread_quickjoin| {
+                for (threads[i + 1 ..]) |thread_quickjoin| {
                     thread_quickjoin.join();
                 }
                 return;
@@ -68,18 +64,14 @@ pub const operation = struct {
         const result: *return_value = allocator.create(return_value) catch return error.kernelmaster_internal_error;
         errdefer allocator.destroy(result);
         return .{
-            .thread = std.Thread.spawn(
-                .{},
-                primary_thread,
-                .{
-                    allocator,
-                    result,
-                    ops,
-                    nkernels,
-                    kernel,
-                    args,
-                }
-            ) catch return error.kernelmaster_internal_error,
+            .thread = std.Thread.spawn(.{}, primary_thread, .{
+                allocator,
+                result,
+                ops,
+                nkernels,
+                kernel,
+                args,
+            }) catch return error.kernelmaster_internal_error,
             .result = result,
             .allocator = allocator,
         };
